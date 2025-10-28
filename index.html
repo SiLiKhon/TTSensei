@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WaniKani Context Collector</title>
+    <style>
+        /* Minimal CSS for readability */
+        body { font-family: sans-serif; max-width: 800px; margin: 20px auto; padding: 0 15px; }
+        .input-group { margin-bottom: 15px; padding: 10px; border: 1px solid #eee; border-radius: 4px; }
+        input[type="text"], input[type="number"] { width: 100%; padding: 8px; margin-top: 5px; box-sizing: border-box; }
+        button { padding: 10px 20px; cursor: pointer; background-color: #ff6600; color: white; border: none; border-radius: 4px; }
+        .vocab-entry { border: 1px solid #ddd; padding: 10px; margin-top: 15px; border-radius: 4px; }
+        .sentence-jp { font-weight: bold; margin-bottom: 3px; }
+        .sentence-en { margin-top: 0; color: #555; border-left: 3px solid #ff6600; padding-left: 10px; }
+    </style>
+</head>
+<body>
+    <h1>WaniKani Context Sentence Collector</h1>
+
+    <div class="input-group">
+        <label for="api-token">WaniKani API Token (v2):</label>
+        <input type="text" id="api-token" placeholder="Paste your API Key here">
+    </div>
+
+    <div class="input-group">
+        <label for="level-filter">Filter by Level(s) (Optional):</label>
+        <input type="text" id="level-filter" placeholder="e.g., 1, 2, 3 or just leave blank">
+    </div>
+
+    <button id="fetch-button">Collect Vocab & Sentences</button>
+    <button id="random-button">Get Random Sentence</button>
+
+    <hr>
+
+    <h2>Results:</h2>
+    <div id="results-container">
+        <p>Your collected vocabulary entries will appear here...</p>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
