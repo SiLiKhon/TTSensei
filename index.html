@@ -3,41 +3,141 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WaniKani Context Collector</title>
+    <title>WaniKani TTSensei</title>
     <style>
         /* Minimal CSS for readability */
         body { font-family: sans-serif; max-width: 800px; margin: 20px auto; padding: 0 15px; }
         .input-group { margin-bottom: 15px; padding: 10px; border: 1px solid #eee; border-radius: 4px; }
-        input[type="text"], input[type="number"] { width: 100%; padding: 8px; margin-top: 5px; box-sizing: border-box; }
-        button { padding: 10px 20px; cursor: pointer; background-color: #ff6600; color: white; border: none; border-radius: 4px; }
+        input[type="text"], input[type="number"] { width: 100%; padding: 8px; margin-top: 5px; margin-bottom: 10px; box-sizing: border-box; }
+        button { padding: 10px 20px; cursor: pointer; background-color: #ff6600; color: white; border: none; border-radius: 4px; font-weight: bold; }
         .vocab-entry { border: 1px solid #ddd; padding: 10px; margin-top: 15px; border-radius: 4px; }
         .sentence-jp { font-weight: bold; margin-bottom: 3px; }
-        .sentence-en { margin-top: 0; color: #555; border-left: 3px solid #ff6600; padding-left: 10px; }
+        .sentence-en { margin-top: 0; color: #bcbcbc; border-left: 3px solid #ff6600; padding-left: 10px; }
+        .vocabulary-jp { font-weight: bold; font-size: 40pt; margin: 5px; }
+        .panel {
+            position: fixed;
+            top: 0;
+            width: 250px;
+            height: 100%;
+            background: #333;
+            color: white;
+            padding: 30px;
+            padding-top: 60px;
+            margin-left: 0px;
+            margin-right: 0px;
+            margin-top: 0;
+            margin-bottom: 0;
+            display: flex;
+            flex-direction: column;
+        }
+        .panel.right { right: -310px; transition: right 0.3s ease; }
+        .panel.right.show { right: 0; }
+        .panel.left { left: -310px; transition: left 0.3s ease; }
+        .panel.left.show { left: 0; }
+        .panel-toggle-btn {
+            position: fixed;
+            top: 20px;
+            background: #007BFF;
+            color: white;
+            border: none;
+            padding: 10px;
+            cursor: pointer;
+        }
+        .panel-toggle-btn.right { right: 20px; }
+        .panel-toggle-btn.left { left: 20px; }
+        a { color: rgb(62, 226, 255); }
+        a:visited { color: rgb(229, 109, 229); }
+        .hidden { opacity: 0; }
+        .spoiler-bg {
+            background-color: #e5e5f7;
+            opacity: 0.8;
+            background-image:  linear-gradient(135deg, #444cf7 25%, transparent 25%), linear-gradient(225deg, #444cf7 25%, transparent 25%), linear-gradient(45deg, #444cf7 25%, transparent 25%), linear-gradient(315deg, #444cf7 25%, #e5e5f7 25%);
+            background-position:  10px 0, 10px 0, 0 0, 0 0;
+            background-size: 10px 10px;
+            background-repeat: repeat;
+        }
+        .title {
+            margin-top: 80px;
+            margin-bottom: 5px;
+        }
+        .subtitle {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #004085;
+            margin-top: 0;
+        }
     </style>
 </head>
 <body>
-    <h1>WaniKani Context Sentence Collector</h1>
-
-    <div class="input-group">
-        <label for="api-token">WaniKani API Token (v2):</label>
-        <input type="text" id="api-token" placeholder="Paste your API Key here">
+    <div id='right-panel' class="panel right">
+        <h2>Settings</h2>
+        <div style="overflow-y: auto; margin-bottom: 100px;">
+            <div class="input-group">
+                <label for="level-filter">Filter by Level(s) (Optional):</label>
+                <input type="text" id="level-filter" placeholder="e.g., 1, 2, 3 or just leave blank">
+                <button id="fetch-button" style="width: 100%;">Collect Vocab & Sentences</button>
+            </div>
+            <div class="input-group">
+                <label for="wk-api-token"><a href="https://www.wanikani.com/settings/personal_access_tokens" target="_blank">WaniKani</a> API Token (v2):</label>
+                <input type="text" id="wk-api-token" placeholder="Paste your API Key here">
+            </div>
+            <div class="input-group">
+                <label for="tts-api-token"><a href="https://voicevox.su-shiki.com/su-shikiapis/" target="_blank">TTS</a> API Token:</label>
+                <input type="text" id="tts-api-token" placeholder="">
+            </div>
+        </div>
     </div>
-
-    <div class="input-group">
-        <label for="level-filter">Filter by Level(s) (Optional):</label>
-        <input type="text" id="level-filter" placeholder="e.g., 1, 2, 3 or just leave blank">
+    <div id='left-panel' class="panel left">
+        <h2>Active Vocabulary</h2>
+        <div id="active-vocab-container" style="overflow-y: auto; margin-bottom: 100px;"></div>
     </div>
+    <button id="left-toggle-btn" class="panel-toggle-btn left">Active Vocabulary</button>
+    <button id="right-toggle-btn" class="panel-toggle-btn right">Settings</button>
 
-    <button id="fetch-button">Collect Vocab & Sentences</button>
+    <h1 class="title">WaniKani TTSensei</h1>
+    <p class="subtitle">Enhance your listening skills with contextual sentences for learned vocabulary.</p>
+
+
     <button id="random-button">Get Random Sentence</button>
+    <button id="voice-button" class="play-button" style="background-color: #007BFF;">&#9658;</button>
 
     <hr>
 
-    <h2>Results:</h2>
-    <div id="results-container">
-        <p>Your collected vocabulary entries will appear here...</p>
+    <!-- <h2>Results:</h2> -->
+    <div id="results-container" style="min-height: 50px;">
+        <!-- <p>Your collected vocabulary entries will appear here...</p> -->
     </div>
+    <hr>
+    <footer style="font-size: xx-small;">
+        <p>This application uses the <a href="https://docs.api.wanikani.com/20170710/" target="_blank">WaniKani API</a>. Users should comply with the <a href="https://www.wanikani.com/terms" target="_blank">WaniKani terms of service</a>.</p>
+
+        <p>This application also uses the <a href="https://voicevox.su-shiki.com/su-shikiapis/" target="_blank">WEB版VOICEVOX API (unofficial)</a>. By using this app, you agree to abide by the <a href="https://voicevox.hiroshiba.jp/term/" target="_blank">VOICEVOX terms and conditions</a>.</p>
+    </footer>
 
     <script src="script.js"></script>
+    <script>
+        // Setup left and right panels
+        const rightPanel = document.getElementById('right-panel');
+        const leftPanel = document.getElementById('left-panel');
+        const rightToggleBtn = document.getElementById('right-toggle-btn');
+        const leftToggleBtn = document.getElementById('left-toggle-btn');
+
+        rightToggleBtn.onclick = function() {
+            rightPanel.classList.toggle('show');
+            rightToggleBtn.innerText = rightPanel.classList.contains('show') ? '→' : 'Settings';
+        };
+        leftToggleBtn.onclick = function() {
+            leftPanel.classList.toggle('show');
+            leftToggleBtn.innerText = leftPanel.classList.contains('show') ? '←' : 'Active Vocabulary';
+        };
+
+        // Setup spoilers
+        document.addEventListener('click', function(event) {
+            if (event.target.classList.contains('spoiler')) {
+                event.target.classList.toggle('hidden');
+                event.target.parentElement.classList.toggle('spoiler-bg');
+            }
+        });
+    </script>
 </body>
 </html>
