@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WaniKani TTSensei</title>
+    <title>TTSensei</title>
     <style>
         /* Minimal CSS for readability */
         body { font-family: sans-serif; max-width: 800px; margin: 20px auto; padding: 0 15px; }
@@ -59,7 +59,6 @@
             background-repeat: repeat;
         }
         .title {
-            margin-top: 80px;
             margin-bottom: 5px;
         }
         .subtitle {
@@ -96,8 +95,13 @@
     <button id="left-toggle-btn" class="panel-toggle-btn left">Active Vocabulary</button>
     <button id="right-toggle-btn" class="panel-toggle-btn right">Settings</button>
 
-    <h1 class="title">WaniKani TTSensei</h1>
-    <p class="subtitle">Enhance your listening skills with contextual sentences for learned vocabulary.</p>
+    <div style="display: flex; flex-direction: row; margin-top: 80px;">
+        <img src="logo.png" alt="Icon" class="icon" width="128px" height="128px" />
+        <div style="margin-left: 15px;">
+            <h1 class="title">TTSensei</h1>
+            <p class="subtitle">Enhance your listening skills with contextual sentences for vocabulary learned on WaniKani.</p>
+        </div>
+    </div>
 
 
     <button id="random-button">Get Random Sentence</button>
