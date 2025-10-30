@@ -8,7 +8,7 @@ const currentRandomSentence = {}
 
 // Functions
 function reportError(error) {
-    document.getElementById('results-container').innerHTML = `<p style="color: red;">Error: ${error.message}.</p>`;
+    showStatusMessage(`Error: ${error.message}.`, 'error');
     console.error(error);
 }
 
@@ -90,6 +90,7 @@ async function fetchWaniKani() {
     }
     localStorage.setItem("WK_API_KEY", token)
 
+    showLoadingMessage("Fetching WaniKani assignments...");
     let assignments = [];
     try {
         assignments = await _wkApiRequest(
@@ -99,6 +100,8 @@ async function fetchWaniKani() {
     } catch (error) {
         reportError(error)
         return;
+    } finally {
+        hideLoadingMessage();
     }
 
     const vocab_assignments = assignments.filter(
@@ -125,6 +128,7 @@ async function fetchWaniKani() {
 
     let vocab = [];
     if (remainingIds.length > 0) {
+        showLoadingMessage("Fetching WaniKani vocabulary...");
         try {
             vocab = await _wkApiRequest(
                 token,
@@ -134,6 +138,8 @@ async function fetchWaniKani() {
         } catch (error) {
             reportError(error);
             return;
+        } finally {
+            hideLoadingMessage();
         }
     }
 
@@ -250,20 +256,27 @@ async function generateVoice() {
         data.append('text', text);
         data.append('key', token);
 
-        const response = await fetch(
-            TTS_API_BASE_URL,
-            {
-                method: 'POST',
-                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-                body: data.toString(),
-            },
-        );
-        if (!response.ok) {
-            console.error('TTS response was not ok ' + response.statusText);
+        showLoadingMessage("Generating voice...");
+        try {
+            const response = await fetch(
+                TTS_API_BASE_URL,
+                {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                    body: data.toString(),
+                },
+            );
+            if (!response.ok) {
+                throw new Error(`API Request Failed: ${response.status} - ${response.statusText}`);
+            }
+            voiceBase64 = await blobToBase64(await response.blob());
+            localStorage.setItem(`TTS_${text}`, voiceBase64);
+        } catch (error) {
+            reportError(error);
             return;
+        } finally {
+            hideLoadingMessage();
         }
-        voiceBase64 = await blobToBase64(await response.blob());
-        localStorage.setItem(`TTS_${text}`, voiceBase64);
     }
 
     await (
@@ -276,6 +289,33 @@ async function generateVoice() {
         })
         .catch(error => console.error('Error playing audio:', error))
     );
+}
+
+
+function getAllUIElements() {
+    return Array.from(document.querySelectorAll('button, input')).filter(
+        element => !element.classList.contains('panel-toggle-btn')
+    );
+}
+
+
+function showLoadingMessage(message) {
+    const uiElements = getAllUIElements();
+    uiElements.forEach(element => element.classList.add('disabled-ui-element'));
+
+    const msgContainer = document.getElementById("loading-message");
+    msgContainer.innerHTML = message;
+    msgContainer.classList.add('show');
+}
+
+
+function hideLoadingMessage() {
+    const uiElements = getAllUIElements();
+    uiElements.forEach(element => element.classList.remove('disabled-ui-element'));
+
+    const msgContainer = document.getElementById("loading-message");
+    msgContainer.innerHTML = "";
+    msgContainer.classList.remove('show');
 }
 
 
