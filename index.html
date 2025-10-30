@@ -67,6 +67,31 @@
             color: #004085;
             margin-top: 0;
         }
+
+        #status-messages-host {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+        .status-message {
+            padding: 10px 20px;
+            margin: 5px 0;
+            border-radius: 5px;
+            border: 1px solid;
+            color: white;
+            display: block;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+        .status-message.success {
+            background-color: rgb(152, 195, 201);
+            border-color: rgb(53, 69, 71);
+        }
+        .status-message.error {
+            background-color: rgb(223, 181, 143);
+            border-color: rgb(66, 53, 41);
+        }
     </style>
 </head>
 <body>
@@ -113,6 +138,7 @@
 
     </div>
     <hr>
+    <div id="status-messages-host"></div>
     <footer style="font-size: xx-small;">
         <p>This application uses the <a href="https://docs.api.wanikani.com/20170710/" target="_blank">WaniKani API</a>. Users should comply with the <a href="https://www.wanikani.com/terms" target="_blank">WaniKani terms of service</a>.</p>
 

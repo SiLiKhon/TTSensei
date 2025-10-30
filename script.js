@@ -1,4 +1,5 @@
 // Globals
+const MESSAGE_TIMEOUT = 5000
 const WK_API_BASE_URL = 'https://api.wanikani.com/v2/'
 const TTS_API_BASE_URL = 'https://deprecatedapis.tts.quest/v2/voicevox/audio/'
 const relevantVocabEntries = []
@@ -9,6 +10,24 @@ const currentRandomSentence = {}
 function reportError(error) {
     document.getElementById('results-container').innerHTML = `<p style="color: red;">Error: ${error.message}.</p>`;
     console.error(error);
+}
+
+
+function showStatusMessage(message, type) {
+    const statusMessagesDiv = document.getElementById('status-messages-host');
+    const messageElement = document.createElement('div');
+
+    messageElement.innerText = message;
+    messageElement.className = `status-message ${type}`;
+
+    statusMessagesDiv.appendChild(messageElement);
+    setTimeout(() => {messageElement.style.opacity = 1;}, 10);
+    setTimeout(() => {messageElement.style.opacity = 0;}, MESSAGE_TIMEOUT);
+    setTimeout(() => {
+        messageElement.style.display = 'none';
+        statusMessagesDiv.removeChild(messageElement);
+    }, 2 * MESSAGE_TIMEOUT);
+    console.log("msg shown:", message, type)
 }
 
 
@@ -43,6 +62,7 @@ async function _wkApiRequest(token, endpoint, params = {}) {
 function updateStatusContainer() {
     const container = document.getElementById("active-vocab-container");
     let html = "";
+    let numSentences = 0;
     relevantVocabEntries.forEach(entry => {
         entry.data.context_sentences.forEach(sentence => {
             html += `
@@ -50,9 +70,14 @@ function updateStatusContainer() {
                 <p class="sentence-en">${sentence.en}</p>
                 <hr>
             `;
+            numSentences += 1;
         });
     });
     container.innerHTML = html;
+    showStatusMessage(
+        `Loaded ${relevantVocabEntries.length} vocabulary words, ${numSentences} context sentences.`,
+        relevantVocabEntries.length > 0 ? "success" : "error",
+    );
 }
 
 
@@ -60,7 +85,7 @@ async function fetchWaniKani() {
     const token = document.getElementById('wk-api-token').value.trim();
 
     if (!token) {
-        alert('Please enter your WaniKani API v2 Token.');
+        showStatusMessage("Please enter your WaniKani API v2 Token.", 'error');
         return;
     }
     localStorage.setItem("WK_API_KEY", token)
@@ -142,7 +167,7 @@ async function fetchWaniKani() {
 function getRandomSentence() {
     const resultsContainer = document.getElementById('results-container');
     if (relevantVocabEntries.length === 0) {
-        alert("Collect vocabulary data first!")
+        showStatusMessage("Please collect vocabulary data first!", 'error');
         return
     }
 
@@ -206,7 +231,7 @@ async function base64ToBlob(base64) {
 
 async function generateVoice() {
     if (!currentRandomSentence.ja) {
-        alert("Pick random sentence first.")
+        showStatusMessage("Please pick random sentence first.", 'error');
         return
     }
 
@@ -216,7 +241,7 @@ async function generateVoice() {
     if (!voiceBase64) {
         const token = document.getElementById('tts-api-token').value.trim();
         if (!token) {
-            alert('Please enter your TTS API Token.');
+            showStatusMessage("Please enter your TTS API Token.", 'error');
             return;
         }
         localStorage.setItem("TTS_API_KEY", token);
