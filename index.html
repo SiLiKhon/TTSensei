@@ -134,6 +134,7 @@
                 <label for="tts-api-token"><a href="https://voicevox.su-shiki.com/su-shikiapis/" target="_blank">TTS</a> API Token (generate <a href="https://su-shiki.com/api/" target="_blank">here</a>):</label>
                 <input type="text" id="tts-api-token" placeholder="">
             </div>
+            <button id="clear-audio-button" style="width: 100%; background-color: #4d666a;">Clear cached audio<br>(free up space)</button>
         </div>
     </div>
     <div id='left-panel' class="panel left">
@@ -169,6 +170,7 @@
         <p>This application also uses the <a href="https://voicevox.su-shiki.com/su-shikiapis/" target="_blank">WEB版VOICEVOX API (unofficial)</a>. By using this app, you agree to abide by the <a href="https://voicevox.hiroshiba.jp/term/" target="_blank">VOICEVOX terms and conditions</a>.</p>
     </footer>
 
+    <script src="thirdParty/localforage.min.js"></script>
     <script src="script.js"></script>
     <script>
         // Setup left and right panels

@@ -88,7 +88,7 @@ async function fetchWaniKani() {
         showStatusMessage("Please enter your WaniKani API v2 Token.", 'error');
         return;
     }
-    localStorage.setItem("WK_API_KEY", token)
+    await localforage.setItem("WK_API_KEY", token)
 
     showLoadingMessage("Fetching WaniKani assignments...");
     let assignments = [];
@@ -113,17 +113,17 @@ async function fetchWaniKani() {
     const subjectIds = vocab_assignments.map(element => element.data.subject_id);
     console.log("filtered assignments:", subjectIds.length);
 
-    const cachedEntries = [];
-    const remainingIds = [];
-
-    subjectIds.forEach(id => {
-        const cachedData = localStorage.getItem(`subjectId_${id}`);
-        if (cachedData) {
-            cachedEntries.push(JSON.parse(cachedData));
-        } else {
-            remainingIds.push(id);
-        }
-    });
+    const cacheQuery = await Promise.all(
+        subjectIds.map(
+            async (id) => {
+                let obj = await localforage.getItem(`subjectId_${id}`);
+                if (!obj) return { cacheStatus: "missing", id: id };
+                return { cacheStatus: "found", obj: JSON.parse(obj)};
+            }
+        )
+    );
+    const remainingIds = cacheQuery.filter(entry => entry.cacheStatus === "missing").map(entry => entry.id);
+    const cachedEntries = cacheQuery.filter(entry => entry.cacheStatus === "found").map(entry => entry.obj);
     console.log("found in cache:", cachedEntries.length);
 
     let vocab = [];
@@ -141,12 +141,15 @@ async function fetchWaniKani() {
         } finally {
             hideLoadingMessage();
         }
+
+        console.log("received vocabulary:", vocab.length);
+        await Promise.all(
+            vocab.map(async element => {
+                await localforage.setItem(`subjectId_${element.id}`, JSON.stringify(element));
+            })
+        );
     }
 
-    console.log("received vocabulary:", vocab.length);
-    vocab.forEach(element => {
-        localStorage.setItem(`subjectId_${element.id}`, JSON.stringify(element))
-    });
 
     vocab = cachedEntries.concat(vocab);
     console.log("total vocab:", vocab.length);
@@ -165,7 +168,7 @@ async function fetchWaniKani() {
 
     relevantVocabEntries.length = 0;
     relevantVocabEntries.push(...vocab);
-    localStorage.setItem('LAST_VOCABULARY', JSON.stringify(relevantVocabEntries));
+    await localforage.setItem('LAST_VOCABULARY', JSON.stringify(relevantVocabEntries));
     updateStatusContainer();
 }
 
@@ -201,20 +204,25 @@ function getRandomSentence() {
 }
 
 
-function _initializeGlobalsFromCache() {
-    const wk_token = localStorage.getItem("WK_API_KEY");
-    if (wk_token) {
-        document.getElementById('wk-api-token').value = wk_token;
-    }
-    const tts_token = localStorage.getItem("TTS_API_KEY");
-    if (tts_token) {
-        document.getElementById('tts-api-token').value = tts_token;
-    }
-    const _last_vocab = localStorage.getItem("LAST_VOCABULARY");
-    if (_last_vocab) {
-        relevantVocabEntries.length = 0
-        relevantVocabEntries.push(...JSON.parse(_last_vocab))
-        updateStatusContainer();
+async function _initializeGlobalsFromCache() {
+    showLoadingMessage("Initializing...");
+    try {
+        const wk_token = await localforage.getItem("WK_API_KEY");
+        if (wk_token) {
+            document.getElementById('wk-api-token').value = wk_token;
+        }
+        const tts_token = await localforage.getItem("TTS_API_KEY");
+        if (tts_token) {
+            document.getElementById('tts-api-token').value = tts_token;
+        }
+        const _last_vocab = await localforage.getItem("LAST_VOCABULARY");
+        if (_last_vocab) {
+            relevantVocabEntries.length = 0
+            relevantVocabEntries.push(...JSON.parse(_last_vocab))
+            updateStatusContainer();
+        }
+    } finally {
+        hideLoadingMessage();
     }
 }
 
@@ -242,7 +250,7 @@ async function generateVoice() {
     }
 
     const text = currentRandomSentence.ja;
-    let voiceBase64 = localStorage.getItem(`TTS_${text}`)
+    let voiceBase64 = await localforage.getItem(`TTS_audio_${text}`)
 
     if (!voiceBase64) {
         const token = document.getElementById('tts-api-token').value.trim();
@@ -250,7 +258,7 @@ async function generateVoice() {
             showStatusMessage("Please enter your TTS API Token.", 'error');
             return;
         }
-        localStorage.setItem("TTS_API_KEY", token);
+        await localforage.setItem("TTS_API_KEY", token);
 
         const data = new URLSearchParams();
         data.append('text', text);
@@ -270,7 +278,7 @@ async function generateVoice() {
                 throw new Error(`API Request Failed: ${response.status} - ${response.statusText}`);
             }
             voiceBase64 = await blobToBase64(await response.blob());
-            localStorage.setItem(`TTS_${text}`, voiceBase64);
+            await localforage.setItem(`TTS_audio_${text}`, voiceBase64);
         } catch (error) {
             reportError(error);
             return;
@@ -319,8 +327,23 @@ function hideLoadingMessage() {
 }
 
 
+async function clearCachedAudio() {
+    showLoadingMessage("Cleaning up audio cache...");
+    try {
+        const keys = (await localforage.keys()).filter(k => k.startsWith("TTS_audio"));
+        await Promise.all(
+            keys.map(async k => await localforage.removeItem(k))
+        );
+        showStatusMessage(`Cleaned up ${keys.length} entries.`, "success");
+    } finally {
+        hideLoadingMessage();
+    }
+}
+
+
 // Initialization
 document.getElementById('fetch-button').addEventListener('click', fetchWaniKani);
 document.getElementById('random-button').addEventListener('click', getRandomSentence);
 document.getElementById('voice-button').addEventListener('click', generateVoice);
+document.getElementById('clear-audio-button').addEventListener('click', clearCachedAudio)
 _initializeGlobalsFromCache();
