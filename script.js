@@ -1,9 +1,18 @@
 // Globals
-const MESSAGE_TIMEOUT = 5000
-const WK_API_BASE_URL = 'https://api.wanikani.com/v2/'
-const TTS_API_BASE_URL = 'https://deprecatedapis.tts.quest/v2/voicevox/audio/'
-const relevantVocabEntries = []
-const currentRandomSentence = {}
+const MESSAGE_TIMEOUT = 5000;
+const WK_API_BASE_URL = 'https://api.wanikani.com/v2/';
+const TTS_API_BASE_URL = 'https://deprecatedapis.tts.quest/v2/voicevox/audio/';
+const DUCK_AI_BASE_URL = 'https://duckduckgo.com/?q={query}&ia=chat&bang=true';
+const DUCK_AI_PROMPT_TEMPLATE = `Please break down the following Japanese sentence:
+
+{sentence}
+
+ - Explain the meaning of each component.
+ - Describe the grammatical structure.
+ - Explain any conjugations used.
+`;
+const relevantVocabEntries = [];
+const currentRandomSentence = {};
 
 
 // Functions
@@ -192,10 +201,13 @@ function getRandomSentence() {
     const vocabEntry = document.createElement('div');
     vocabEntry.className = 'vocab-entry';
 
+    const chatBotLink = createDuckDuckGoLink(sentence.ja);
+
     vocabEntry.innerHTML = `
         <div class="spoiler-bg"><p class="spoiler hidden vocabulary-jp">${entry.data.slug}</p></div>
         <div class="spoiler-bg"><p class="spoiler hidden sentence-jp">${sentence.ja}</p></div>
-        <div class="spoiler-bg"><p class="spoiler hidden sentence-en">${sentence.en}</p></div>
+        <div class="spoiler-bg"><p class="spoiler hidden sentence-en" style="margin-bottom: 4px;">${sentence.en}</p></div>
+        <p style="font-size: x-small; margin-top: 0; margin-bottom: 4px;"><a class="duck-ai-link" href="${chatBotLink}" target="_blank">→ ask duck.ai to explain (external link)</a></p>
     `;
     resultsContainer.appendChild(vocabEntry);
     currentRandomSentence.slug = entry.data.slug;
@@ -338,6 +350,14 @@ async function clearCachedAudio() {
     } finally {
         hideLoadingMessage();
     }
+}
+
+
+function createDuckDuckGoLink(phraseJap) {
+    const customMessage = DUCK_AI_PROMPT_TEMPLATE.replace("{sentence}", phraseJap);
+    const encodedMessage = encodeURIComponent(customMessage);
+    const completeURL = DUCK_AI_BASE_URL.replace("{query}", encodedMessage);
+    return completeURL;
 }
 
 
